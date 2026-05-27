@@ -405,19 +405,23 @@ def _add_percentage_changes(pulls_list: list[dict], periodic_avg: dict) -> None:
         for pull_entry in pull_obj.get("data", []):
             for metric_name, metric_data in pull_entry.get("metrics", {}).items():
                 if metric_name not in periodic_avg:
-                    periodic_value = 0
+                    periodic_value = None
                 else:
                     periodic_data = periodic_avg[metric_name]
                     if isinstance(periodic_data, dict):
-                        periodic_value = periodic_data.get("value", 0)
+                        periodic_value = periodic_data.get("value")
                     else:
                         periodic_value = periodic_data
 
-                pull_value = metric_data.get("value", 0)
-                if periodic_value != 0 and pull_value is not None and periodic_value is not None:
+                pull_value = metric_data.get("value")
+                if (
+                    isinstance(periodic_value, (int, float))
+                    and isinstance(pull_value, (int, float))
+                    and periodic_value != 0
+                ):
                     metric_data["percentage_change"] = ((pull_value - periodic_value) / periodic_value) * 100
                 else:
-                    metric_data["percentage_change"] = 0
+                    metric_data["percentage_change"] = None
 
 
 async def get_pr_details(
@@ -453,7 +457,12 @@ async def get_pr_details(
         "trt-external-payload-crd-scale.yaml",
     ]
 
-    pull_numbers = [int(pr) for pr in pull_requests]
+    if not pull_requests:
+        raise ValueError("At least one pull request number is required")
+    try:
+        pull_numbers = [int(pr) for pr in pull_requests]
+    except ValueError as exc:
+        raise ValueError("Pull request numbers must be integers") from exc
 
     input_vars = {
         "jobtype": "pull",
