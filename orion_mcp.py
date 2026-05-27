@@ -399,6 +399,27 @@ async def get_orion_performance_data(
     except Exception as e:
         return {"error": str(e)}
 
+def _add_percentage_changes(pulls_list: list[dict], periodic_avg: dict) -> None:
+    """Calculate and set percentage_change on each metric in pull data."""
+    for pull_obj in pulls_list:
+        for pull_entry in pull_obj.get("data", []):
+            for metric_name, metric_data in pull_entry.get("metrics", {}).items():
+                if metric_name not in periodic_avg:
+                    periodic_value = 0
+                else:
+                    periodic_data = periodic_avg[metric_name]
+                    if isinstance(periodic_data, dict):
+                        periodic_value = periodic_data.get("value", 0)
+                    else:
+                        periodic_value = periodic_data
+
+                pull_value = metric_data.get("value", 0)
+                if periodic_value != 0 and pull_value is not None and periodic_value is not None:
+                    metric_data["percentage_change"] = ((pull_value - periodic_value) / periodic_value) * 100
+                else:
+                    metric_data["percentage_change"] = 0
+
+
 async def get_pr_details(
     organization: str,
     repository: str,
@@ -476,31 +497,7 @@ async def get_pr_details(
             continue
 
         pulls_list = data["pulls"]
-
-        # Add percentage changes to all metrics in each PR's data
-        for pull_obj in pulls_list:
-            pull_data = pull_obj.get("data", [])
-            for pull_entry in pull_data:
-                if "metrics" not in pull_entry:
-                    continue
-
-                for metric_name, metric_data in pull_entry["metrics"].items():
-                    if metric_name not in periodic_avg:
-                        periodic_value = 0
-                    else:
-                        periodic_data = periodic_avg[metric_name]
-                        if isinstance(periodic_data, dict):
-                            periodic_value = periodic_data.get("value", 0)
-                        else:
-                            periodic_value = periodic_data
-
-                    pull_value = metric_data.get("value", 0)
-                    if periodic_value != 0 and pull_value is not None and periodic_value is not None:
-                        percentage_change = ((pull_value - periodic_value) / periodic_value) * 100
-                    else:
-                        percentage_change = 0
-
-                    metric_data["percentage_change"] = percentage_change
+        _add_percentage_changes(pulls_list, periodic_avg)
 
         summaries.append({
             "config": full_config_path,
