@@ -505,12 +505,6 @@ async def get_pr_details(
             "pulls": pulls_list,
         })
 
-    if not summaries:
-        return types.TextContent(
-            type="text",
-            text="No performance data found for this PR. Please ensure the PR has been tested and the version is correct."
-        )
-
     return summaries
 
 @mcp.tool()
@@ -548,6 +542,11 @@ async def openshift_report_on_pr(
         pr_list = [pull_request]
 
     summaries = await get_pr_details(organization, repository, pr_list, version, lookback)
+    if not summaries:
+        return {
+            "summaries": [],
+            "message": "No performance data found for this PR. Please ensure the PR has been tested and the version is correct."
+        }
     return {
         "summaries": summaries
     }
