@@ -30,6 +30,7 @@ from utils.utils import (
     parse_nightly_version,
     parse_timestamp,
     filter_data_by_timestamp,
+    check_payload_phase,
     current_es_config,  # Context variable for ES config isolation
 )
 from utils.header_decryption import get_es_config_from_headers
@@ -826,6 +827,14 @@ async def has_nightly_regressed(
             return f"Error: '{previous_nightly}' is not a nightly version."
         if prev_nightly_info.nightly_date >= nightly_info.nightly_date:
             return "Error: previous_nightly must be earlier than nightly_version."
+
+    # Check if payload was rejected by release controller
+    phase = await check_payload_phase(nightly_info.full_version, nightly_info.major_version)
+    if phase == "Rejected":
+        return (
+            f"Payload {nightly_version} was Rejected by the release controller "
+            f"(failed acceptance tests). Skipping regression analysis."
+        )
 
     # Use default TRT configs if none specified
     config_list = ([c.strip() for c in configs.split(",") if c.strip()] if configs.strip() else [
