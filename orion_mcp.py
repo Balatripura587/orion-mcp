@@ -778,7 +778,7 @@ async def metrics_correlation(
 
 
 @mcp.tool()
-async def has_nightly_regressed(
+async def has_nightly_regressed(  # pylint: disable=too-many-return-statements
     nightly_version: Annotated[str, Field(description="Full nightly version string (e.g., '4.22.0-0.nightly-2026-01-05-203335')")],
     previous_nightly: Annotated[str, Field(description="Optional previous nightly to compare against (e.g., '4.22.0-0.nightly-2026-01-01-123456')")] = "",
     lookback: Annotated[str, Field(description="Number of days to lookback")] = "30",
