@@ -609,6 +609,6 @@ async def check_payload_phase(nightly_version: str, major_version: str) -> Optio
             resp = await client.get(url)
             resp.raise_for_status()
             return resp.json().get("phase")
-    except (httpx.HTTPError, KeyError, ValueError):
+    except (httpx.HTTPError, KeyError, ValueError, AttributeError):
         return None
 
